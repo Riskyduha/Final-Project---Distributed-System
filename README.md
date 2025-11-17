@@ -1,5 +1,10 @@
 # Simulasi Aplikasi Chat Real-Time dengan Arsitektur Event-Driven
 
+## Anggota
+1. Muhamad Rizqi Duha Pramudya (256150100111016)
+2. Syahrul Budi Rahmadan (256150100111013)
+3. Ikhlasul Amal (2546000066)
+
 ## Tujuan Percobaan
 
 Percobaan ini bertujuan untuk memahami dan mengimplementasikan konsep-konsep fundamental dalam sistem terdistribusi, khususnya:
