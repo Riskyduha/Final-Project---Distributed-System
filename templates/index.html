@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Event-Driven Chat Simulation</title>
+  <style>
+    body{font-family: Arial, sans-serif;margin:18px}
+    .panel{display:inline-block;vertical-align:top;width:45%;margin-right:2%;}
+    .card{border:1px solid #ddd;padding:10px;margin-bottom:10px}
+    .log{height:220px;overflow:auto;background:#f9f9f9;padding:8px;border:1px solid #eee}
+    .metrics{font-size:14px}
+    .config-row{margin:6px 0}
+    .config-row label{display:inline-block;width:140px;font-size:13px}
+    .config-row input{width:80px}
+    canvas{max-width:100%;height:180px}
+  </style>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <h2>Event-Driven Chat Simulation (2 Nodes)</h2>
+  <div class="card">
+    <label>Instance Node ID: </label>
+    <select id="nodeSelect">
+      <option value="A">A</option>
+      <option value="B">B</option>
+    </select>
+    <button id="registerBtn">Register</button>
+    <label style="margin-left:12px">Method: </label>
+    <select id="methodSelect">
+      <option value="Direct">Direct</option>
+      <option value="PubSub">PubSub (ACK+Resend)</option>
+    </select>
+  </div>
+
+  <div class="panel">
+    <div class="card"><strong>Node A</strong>
+      <div id="panelA" class="log"></div>
+      <div style="margin-top:6px">
+        <input id="msgA" placeholder="Message from A" style="width:70%"/>
+        <button onclick="sendFrom('A')">Send to B</button>
+      </div>
+    </div>
+    <div class="card"><strong>Node B</strong>
+      <div id="panelB" class="log"></div>
+      <div style="margin-top:6px">
+        <input id="msgB" placeholder="Message from B" style="width:70%"/>
+        <button onclick="sendFrom('B')">Send to A</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="card"><strong>Metrics / Monitor</strong>
+      <div id="metrics" class="metrics"></div>
+    </div>
+    <div class="card"><strong>Simulation Config</strong>
+      <div class="config-row">
+        <label>Loss Rate (%):</label>
+        <input id="lossRate" type="number" min="0" max="100" value="10"/>
+      </div>
+      <div class="config-row">
+        <label>Latency Min (ms):</label>
+        <input id="latencyMin" type="number" min="0" value="50"/>
+      </div>
+      <div class="config-row">
+        <label>Latency Max (ms):</label>
+        <input id="latencyMax" type="number" min="0" value="250"/>
+      </div>
+      <div class="config-row">
+        <label>Max Retries:</label>
+        <input id="maxRetries" type="number" min="0" value="2"/>
+      </div>
+      <div class="config-row">
+        <label>ACK Timeout (ms):</label>
+        <input id="ackTimeout" type="number" min="100" value="600"/>
+      </div>
+      <button id="updateConfigBtn" style="margin-top:6px">Update Config</button>
+    </div>
+    <div class="card"><strong>Event Log</strong>
+      <div id="eventLog" class="log"></div>
+    </div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:12px">
+    <div class="card" style="flex:1"><strong>Latency (avg)</strong><canvas id="latencyChart"></canvas></div>
+    <div class="card" style="flex:1"><strong>Throughput (delivered/s)</strong><canvas id="throughputChart"></canvas></div>
+  </div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
