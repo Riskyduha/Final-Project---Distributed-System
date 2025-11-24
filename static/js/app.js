@@ -101,11 +101,60 @@ function initCharts(){
     data: {
       labels: timeLabels,
       datasets: [
-        {label: 'Direct', data: latencyData.Direct, borderColor: 'rgb(75, 192, 192)', tension: 0.1},
-        {label: 'PubSub', data: latencyData.PubSub, borderColor: 'rgb(255, 99, 132)', tension: 0.1}
+        {
+          label: 'Direct', 
+          data: latencyData.Direct, 
+          borderColor: '#2196F3',
+          backgroundColor: 'rgba(33, 150, 243, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'PubSub', 
+          data: latencyData.PubSub, 
+          borderColor: '#03A9F4',
+          backgroundColor: 'rgba(3, 169, 244, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        }
       ]
     },
-    options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true}}}
+    options: {
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: {
+        legend: {
+          labels: {
+            color: '#212121',
+            font: {
+              size: 13,
+              weight: 600
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: '#E3F2FD'
+          },
+          ticks: {
+            color: '#757575'
+          }
+        },
+        x: {
+          grid: {
+            color: '#E3F2FD'
+          },
+          ticks: {
+            color: '#757575'
+          }
+        }
+      }
+    }
   });
   const throughputCtx = document.getElementById('throughputChart').getContext('2d');
   throughputChart = new Chart(throughputCtx, {
@@ -113,11 +162,60 @@ function initCharts(){
     data: {
       labels: timeLabels,
       datasets: [
-        {label: 'Direct', data: throughputData.Direct, borderColor: 'rgb(75, 192, 192)', tension: 0.1},
-        {label: 'PubSub', data: throughputData.PubSub, borderColor: 'rgb(255, 99, 132)', tension: 0.1}
+        {
+          label: 'Direct', 
+          data: throughputData.Direct, 
+          borderColor: '#1976D2',
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'PubSub', 
+          data: throughputData.PubSub, 
+          borderColor: '#0288D1',
+          backgroundColor: 'rgba(2, 136, 209, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true
+        }
       ]
     },
-    options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true}}}
+    options: {
+      responsive: true, 
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#212121',
+            font: {
+              size: 13,
+              weight: 600
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: '#E3F2FD'
+          },
+          ticks: {
+            color: '#757575'
+          }
+        },
+        x: {
+          grid: {
+            color: '#E3F2FD'
+          },
+          ticks: {
+            color: '#757575'
+          }
+        }
+      }
+    }
   });
 }
 
