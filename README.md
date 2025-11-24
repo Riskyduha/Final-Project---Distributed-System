@@ -959,4 +959,3 @@ Dari percobaan ini, mahasiswa diharapkan dapat:
 - **Financial transactions**: Critical reliability (PubSub dengan high retries)
 - **Gaming**: Real-time response (Direct dengan best-effort)
 - **IoT sensor data**: Mix - critical data pakai PubSub, telemetry pakai Direct
->>>>>>> e3ab9b79c681eac60e81154082c9ffd5fe187cc7
