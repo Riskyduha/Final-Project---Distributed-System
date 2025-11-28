@@ -46,14 +46,18 @@ function sendFrom(node){
 }
 
 socket.on('message', (data) => {
-  // delivered generic message
-  appendPanel(data.to, `(${data.method}) ${data.from} -> ${data.to}: ${data.content}`);
+  // Show on both panels for visibility
+  const line = `(${data.method}) ${data.from} -> ${data.to}: ${data.content}`;
+  appendPanel('A', line);
+  appendPanel('B', line);
   logEvent(`Delivered (Direct): ${data.msg_id} from ${data.from} to ${data.to}`);
 });
 
 socket.on('pubsub_message', (data) => {
-  // For pubsub, each subscriber receives message and should ACK
-  appendPanel(data.to, `(PubSub attempt ${data.attempt}) ${data.from} -> ${data.to}: ${data.content}`);
+  // For pubsub, show on both panels
+  const line = `(PubSub attempt ${data.attempt}) ${data.from} -> ${data.to}: ${data.content}`;
+  appendPanel('A', line);
+  appendPanel('B', line);
   // send ack back to server
   socket.emit('pubsub_ack', {msg_id: data.msg_id, node: data.to});
   logEvent(`PubSub received by ${data.to} attempt ${data.attempt}`);

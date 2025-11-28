@@ -1,0 +1,37 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - appnet
+
+  app:
+    build: .
+    container_name: chat-app
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    environment:
+      FLASK_ENV: production
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RABBITMQ_PORT: 5672
+    ports:
+      - "5000:5000"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge

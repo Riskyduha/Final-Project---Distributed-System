@@ -131,6 +131,28 @@ Server akan berjalan di `http://localhost:5000`
 5. Ketik pesan dan klik tombol "Send"
 6. Amati hasil di panel log, metrik, dan chart
 
+## Deploy dengan Docker (RabbitMQ + App)
+
+### Prasyarat
+- Docker dan Docker Compose terpasang
+
+### Langkah Cepat
+
+```bash
+docker compose up --build
+```
+
+Layanan yang berjalan:
+- Aplikasi: http://localhost:5000
+- RabbitMQ Management UI: http://localhost:15672 (user: guest, pass: guest)
+
+Arsitektur runtime:
+- Aplikasi Flask berkomunikasi ke RabbitMQ (AMQP 5672) sebagai message broker.
+- Pesan Direct diterbitkan via exchange `chat.direct` (routing key node).
+- Pesan PubSub diterbitkan via exchange `chat.pubsub` (fanout) dan dikonsumsi per node secara konkuren via thread.
+
+Catatan: Variabel lingkungan koneksi RabbitMQ dapat dikonfigurasi di `docker-compose.yml`.
+
 ## Panduan Eksperimen
 
 ### Eksperimen 1: Membandingkan Direct vs PubSub dalam Kondisi Normal
