@@ -37,6 +37,57 @@ function joinChat() {
   socket.emit('join', { nickname: nickname });
 }
 
+// Logout function
+function showLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.add('show');
+  }
+}
+
+function hideLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+function confirmLogout() {
+  console.log('👋 User logging out:', currentUser);
+  
+  // Disconnect socket
+  socket.disconnect();
+  
+  // Reset current user
+  currentUser = null;
+  
+  // Clear message list
+  const messageList = document.getElementById('messageList');
+  if (messageList) {
+    messageList.innerHTML = '';
+  }
+  
+  // Show join container, hide chat container
+  const joinContainer = document.getElementById('joinContainer');
+  const chatContainer = document.getElementById('chatContainer');
+  
+  if (joinContainer) joinContainer.style.display = 'flex';
+  if (chatContainer) chatContainer.style.display = 'none';
+  
+  // Hide modal
+  hideLogoutModal();
+  
+  // Reconnect socket for next login
+  socket.connect();
+  
+  // Focus on nickname input
+  const nicknameInput = document.getElementById('nicknameInput');
+  if (nicknameInput) {
+    nicknameInput.value = '';
+    nicknameInput.focus();
+  }
+}
+
 // Send message function
 function sendMessage() {
   const input = document.getElementById('messageInput');
@@ -99,7 +150,31 @@ function appendMessage(nick, text, ts) {
     minute: '2-digit'
   });
   
-  div.innerHTML = '<strong>' + nick + '</strong><span class="time">' + time + '</span><p>' + text + '</p>';
+  // Create message structure
+  const messageHeader = document.createElement('div');
+  messageHeader.className = 'message-header';
+  
+  const strong = document.createElement('strong');
+  strong.textContent = nick;
+  
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'time';
+  timeSpan.textContent = time;
+  
+  messageHeader.appendChild(strong);
+  messageHeader.appendChild(timeSpan);
+  
+  const messageBubble = document.createElement('div');
+  messageBubble.className = 'message-bubble';
+  
+  const p = document.createElement('p');
+  p.textContent = text;
+  
+  messageBubble.appendChild(p);
+  
+  div.appendChild(messageHeader);
+  div.appendChild(messageBubble);
+  
   list.appendChild(div);
   list.scrollTop = list.scrollHeight;
 }
@@ -114,7 +189,12 @@ function appendSystemMessage(text) {
   
   const div = document.createElement('div');
   div.className = 'message system';
-  div.textContent = text;
+  
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble';
+  bubble.textContent = text;
+  
+  div.appendChild(bubble);
   list.appendChild(div);
   list.scrollTop = list.scrollHeight;
 }
@@ -204,6 +284,37 @@ window.addEventListener('DOMContentLoaded', function() {
   if (sendBtn) {
     sendBtn.addEventListener('click', sendMessage);
     console.log('✅ Send button listener attached');
+  }
+  
+  // Logout button
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', showLogoutModal);
+    console.log('✅ Logout button listener attached');
+  }
+  
+  // Cancel logout button
+  const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+  if (cancelLogoutBtn) {
+    cancelLogoutBtn.addEventListener('click', hideLogoutModal);
+    console.log('✅ Cancel logout button listener attached');
+  }
+  
+  // Confirm logout button
+  const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+  if (confirmLogoutBtn) {
+    confirmLogoutBtn.addEventListener('click', confirmLogout);
+    console.log('✅ Confirm logout button listener attached');
+  }
+  
+  // Close modal when clicking outside
+  const logoutModal = document.getElementById('logoutModal');
+  if (logoutModal) {
+    logoutModal.addEventListener('click', function(e) {
+      if (e.target === logoutModal) {
+        hideLogoutModal();
+      }
+    });
   }
   
   // Message input
