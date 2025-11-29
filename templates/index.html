@@ -3,110 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event-Driven Chat Simulation</title>
+  <title>Real-time Chat</title>
   <link rel="stylesheet" href="/static/css/style.css">
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div class="container">
-    <h2>🚀 Event-Driven Chat Simulation (2 Nodes)</h2>
-    
-    <!-- Control Panel -->
-    <div class="control-panel">
-      <label>Instance Node ID:</label>
-      <select id="nodeSelect">
-        <option value="A">Node A</option>
-        <option value="B">Node B</option>
-      </select>
-      <button id="registerBtn">🔗 Register</button>
-      
-      <label style="margin-left: 20px">Delivery Method:</label>
-      <select id="methodSelect">
-        <option value="Direct">⚡ Direct</option>
-        <option value="PubSub">📡 PubSub (ACK+Resend)</option>
-      </select>
+  <div class="container" id="joinContainer">
+    <div class="join-box">
+      <h2>🚀 Welcome to Chat Room</h2>
+      <p>Enter your nickname to join</p>
+      <input type="text" id="nicknameInput" placeholder="Your nickname..." autofocus />
+      <button id="joinBtn" type="button">Join Chat</button>
     </div>
+  </div>
 
-    <!-- Main Layout -->
-    <div class="main-layout">
-      <!-- Left Panel - Chat Nodes -->
-      <div class="panel">
-        <!-- Node A -->
-        <div class="card node-a">
-          <strong>💬 Node A</strong>
-          <div id="panelA" class="log"></div>
-          <div class="input-section">
-            <input id="msgA" placeholder="Type message from Node A..." />
-            <button onclick="sendFrom('A')">Send to B →</button>
-          </div>
+  <div class="container" id="chatContainer" style="display:none;">
+
+    <!-- Chat Layout -->
+    <div class="chat-layout">
+      <!-- Sidebar - Online Users -->
+      <div class="sidebar">
+        <div class="header">
+          <h3>💬 Profile</h3>
+          <p id="myNickname" class="my-nickname"></p>
         </div>
-        
-        <!-- Node B -->
-        <div class="card node-b">
-          <strong>💬 Node B</strong>
-          <div id="panelB" class="log"></div>
-          <div class="input-section">
-            <input id="msgB" placeholder="Type message from Node B..." />
-            <button onclick="sendFrom('B')">Send to A →</button>
-          </div>
+        <div class="online-users">
+          <h4>Online Users (<span id="userCount">0</span>)</h4>
+          <ul id="userList"></ul>
         </div>
       </div>
 
-      <!-- Right Panel - Monitoring & Config -->
-      <div class="panel">
-        <!-- Metrics -->
-        <div class="card">
-          <strong>📊 Metrics / Monitor</strong>
-          <div id="metrics" class="metrics">
-            <div class="loading">Waiting for data...</div>
-          </div>
+      <!-- Chat Area -->
+      <div class="chat-area">
+        <div class="chat-header">
+          <h3>General Chat</h3>
+          <span id="typingIndicator" class="typing-indicator" style="display:none;">Someone is typing...</span>
         </div>
-        
-        <!-- Configuration -->
-        <div class="card">
-          <strong>⚙️ Simulation Config</strong>
-          <div class="config-row">
-            <label>Loss Rate (%):</label>
-            <input id="lossRate" type="number" min="0" max="100" value="10"/>
-          </div>
-          <div class="config-row">
-            <label>Latency Min (ms):</label>
-            <input id="latencyMin" type="number" min="0" value="50"/>
-          </div>
-          <div class="config-row">
-            <label>Latency Max (ms):</label>
-            <input id="latencyMax" type="number" min="0" value="250"/>
-          </div>
-          <div class="config-row">
-            <label>Max Retries:</label>
-            <input id="maxRetries" type="number" min="0" value="2"/>
-          </div>
-          <div class="config-row">
-            <label>ACK Timeout (ms):</label>
-            <input id="ackTimeout" type="number" min="100" value="600"/>
-          </div>
-          <button id="updateConfigBtn">🔄 Update Config</button>
-        </div>
-        
-        <!-- Event Log -->
-        <div class="card">
-          <strong>📝 Event Log</strong>
-          <div id="eventLog" class="log"></div>
+        <div id="messageList" class="message-list"></div>
+        <div class="message-input">
+          <input type="text" id="messageInput" placeholder="Type a message..." />
+          <button id="sendBtn">Send</button>
         </div>
       </div>
-    </div>
 
-    <!-- Charts Section -->
-    <div class="charts-container">
-      <div class="chart-card">
-        <strong>⏱️ Latency (avg)</strong>
-        <canvas id="latencyChart"></canvas>
-      </div>
-      <div class="chart-card">
-        <strong>📈 Throughput (delivered/s)</strong>
-        <canvas id="throughputChart"></canvas>
-      </div>
     </div>
   </div>
 

@@ -1,239 +1,235 @@
-const socket = io();
-let myNode = null;
-
-// Chart data
-const latencyData = {Direct: [], PubSub: []};
-const throughputData = {Direct: [], PubSub: []};
-const timeLabels = [];
-let latencyChart, throughputChart;
-
-document.getElementById('registerBtn').addEventListener('click', () => {
-  myNode = document.getElementById('nodeSelect').value;
-  socket.emit('register', {node: myNode});
-  logEvent(`Registered as node ${myNode}`);
+// Initialize socket connection
+console.log('Initializing Socket.IO...');
+const socket = io({
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5
 });
 
-document.getElementById('updateConfigBtn').addEventListener('click', () => {
-  const cfg = {
-    loss_rate: document.getElementById('lossRate').value,
-    latency_min: document.getElementById('latencyMin').value,
-    latency_max: document.getElementById('latencyMax').value,
-    max_retries: document.getElementById('maxRetries').value,
-    ack_timeout: document.getElementById('ackTimeout').value
-  };
-  socket.emit('update_config', cfg);
-  logEvent('Config update sent');
+let currentUser = null;
+let typingTimeout = null;
+
+// Socket connection events
+socket.on('connect', function() {
+  console.log('✅ Socket connected:', socket.id);
 });
 
-socket.on('connected', (d) => { logEvent('Socket connected'); initCharts(); });
-socket.on('registered', (d) => { logEvent('Server acknowledged registration: '+d.node) });
-socket.on('config_updated', (cfg) => {
-  document.getElementById('lossRate').value = cfg.loss_rate;
-  document.getElementById('latencyMin').value = cfg.latency_min;
-  document.getElementById('latencyMax').value = cfg.latency_max;
-  document.getElementById('maxRetries').value = cfg.max_retries;
-  document.getElementById('ackTimeout').value = cfg.ack_timeout;
-  logEvent('Config updated by server');
+socket.on('connect_error', function(error) {
+  console.error('❌ Socket connection error:', error);
 });
 
-function sendFrom(node){
-  const method = document.getElementById('methodSelect').value;
-  let to = (node === 'A') ? 'B' : 'A';
-  const content = (node === 'A') ? document.getElementById('msgA').value : document.getElementById('msgB').value;
-  const payload = {from: node, to: to, method: method, content: content};
-  socket.emit('send_message', payload);
-  appendPanel(node, `You -> ${to}: ${content}`);
-}
-
-socket.on('message', (data) => {
-  // Show on both panels for visibility
-  const line = `(${data.method}) ${data.from} -> ${data.to}: ${data.content}`;
-  appendPanel('A', line);
-  appendPanel('B', line);
-  logEvent(`Delivered (Direct): ${data.msg_id} from ${data.from} to ${data.to}`);
+socket.on('disconnect', function(reason) {
+  console.log('⚠️ Socket disconnected:', reason);
 });
 
-socket.on('pubsub_message', (data) => {
-  // For pubsub, show on both panels
-  const line = `(PubSub attempt ${data.attempt}) ${data.from} -> ${data.to}: ${data.content}`;
-  appendPanel('A', line);
-  appendPanel('B', line);
-  // send ack back to server
-  socket.emit('pubsub_ack', {msg_id: data.msg_id, node: data.to});
-  logEvent(`PubSub received by ${data.to} attempt ${data.attempt}`);
-});
-
-socket.on('sent_ack', (d) => { logEvent(`Server accepted send (${d.msg_id}) method=${d.method}`); });
-socket.on('delivery_failed', (d) => { logEvent(`Delivery failed: ${d.msg_id} (${d.reason})`) });
-
-socket.on('metrics_update', (snap) => {
-  const el = document.getElementById('metrics');
-  el.innerHTML = '';
-  const now = new Date().toLocaleTimeString();
-  for(const k of Object.keys(snap)){
-    const s = snap[k];
-    const line = `${k}: sent=${s.sent} delivered=${s.delivered} lost=${s.lost} avg_latency=${s.avg_latency}s`;
-    const p = document.createElement('div'); p.textContent = line; el.appendChild(p);
-    // Update chart data
-    latencyData[k].push(s.avg_latency);
-    if(latencyData[k].length > 20) latencyData[k].shift();
-    const rate = s.delivered / ((Date.now() / 1000) || 1); // rough throughput
-    throughputData[k].push(rate);
-    if(throughputData[k].length > 20) throughputData[k].shift();
+// Join chat function
+function joinChat() {
+  const nicknameInput = document.getElementById('nicknameInput');
+  const nickname = nicknameInput.value.trim();
+  
+  if (!nickname) {
+    alert('Please enter a nickname');
+    nicknameInput.focus();
+    return;
   }
-  // Update time labels
-  timeLabels.push(now);
-  if(timeLabels.length > 20) timeLabels.shift();
-  updateCharts();
-});
-
-function appendPanel(node, text){
-  const id = (node === 'A') ? 'panelA' : 'panelB';
-  const el = document.getElementById(id);
-  const d = document.createElement('div'); d.textContent = `[${(new Date()).toLocaleTimeString()}] ` + text; el.appendChild(d); el.scrollTop = el.scrollHeight;
+  
+  console.log('🚀 Attempting to join with nickname:', nickname);
+  socket.emit('join', { nickname: nickname });
 }
 
-function logEvent(text){
-  const el = document.getElementById('eventLog');
-  const d = document.createElement('div'); d.textContent = `[${(new Date()).toLocaleTimeString()}] ` + text; el.appendChild(d); el.scrollTop = el.scrollHeight;
-}
-
-function initCharts(){
-  const latencyCtx = document.getElementById('latencyChart').getContext('2d');
-  latencyChart = new Chart(latencyCtx, {
-    type: 'line',
-    data: {
-      labels: timeLabels,
-      datasets: [
-        {
-          label: 'Direct', 
-          data: latencyData.Direct, 
-          borderColor: '#2196F3',
-          backgroundColor: 'rgba(33, 150, 243, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'PubSub', 
-          data: latencyData.PubSub, 
-          borderColor: '#03A9F4',
-          backgroundColor: 'rgba(3, 169, 244, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true, 
-      maintainAspectRatio: false, 
-      plugins: {
-        legend: {
-          labels: {
-            color: '#212121',
-            font: {
-              size: 13,
-              weight: 600
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            color: '#E3F2FD'
-          },
-          ticks: {
-            color: '#757575'
-          }
-        },
-        x: {
-          grid: {
-            color: '#E3F2FD'
-          },
-          ticks: {
-            color: '#757575'
-          }
-        }
-      }
-    }
+// Send message function
+function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  
+  if (!text) {
+    console.log('⚠️ Empty message, not sending');
+    return;
+  }
+  
+  console.log('📤 Sending message:', text);
+  console.log('📤 Current user:', currentUser);
+  console.log('📤 Socket connected:', socket.connected);
+  
+  socket.emit('send_message', { text: text }, function(response) {
+    console.log('✅ Message send acknowledged:', response);
   });
-  const throughputCtx = document.getElementById('throughputChart').getContext('2d');
-  throughputChart = new Chart(throughputCtx, {
-    type: 'line',
-    data: {
-      labels: timeLabels,
-      datasets: [
-        {
-          label: 'Direct', 
-          data: throughputData.Direct, 
-          borderColor: '#1976D2',
-          backgroundColor: 'rgba(25, 118, 210, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'PubSub', 
-          data: throughputData.PubSub, 
-          borderColor: '#0288D1',
-          backgroundColor: 'rgba(2, 136, 209, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true, 
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: '#212121',
-            font: {
-              size: 13,
-              weight: 600
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            color: '#E3F2FD'
-          },
-          ticks: {
-            color: '#757575'
-          }
-        },
-        x: {
-          grid: {
-            color: '#E3F2FD'
-          },
-          ticks: {
-            color: '#757575'
-          }
-        }
-      }
+  
+  input.value = '';
+  socket.emit('typing', { typing: false });
+}
+
+// Update user list
+function updateUserList(users) {
+  console.log('👥 Updating user list:', users);
+  const list = document.getElementById('userList');
+  const count = document.getElementById('userCount');
+  
+  if (!list || !count) {
+    console.error('User list elements not found');
+    return;
+  }
+  
+  list.innerHTML = '';
+  count.textContent = users.length;
+  
+  users.forEach(function(u) {
+    const li = document.createElement('li');
+    li.textContent = u;
+    if (u === currentUser) {
+      li.classList.add('me');
     }
+    list.appendChild(li);
   });
 }
 
-function updateCharts(){
-  if(latencyChart){
-    latencyChart.data.labels = timeLabels;
-    latencyChart.data.datasets[0].data = latencyData.Direct;
-    latencyChart.data.datasets[1].data = latencyData.PubSub;
-    latencyChart.update('none');
+// Append message
+function appendMessage(nick, text, ts) {
+  const list = document.getElementById('messageList');
+  if (!list) {
+    console.error('Message list not found');
+    return;
   }
-  if(throughputChart){
-    throughputChart.data.labels = timeLabels;
-    throughputChart.data.datasets[0].data = throughputData.Direct;
-    throughputChart.data.datasets[1].data = throughputData.PubSub;
-    throughputChart.update('none');
-  }
+  
+  const div = document.createElement('div');
+  div.className = nick === currentUser ? 'message me' : 'message';
+  
+  const time = new Date(ts * 1000).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  div.innerHTML = '<strong>' + nick + '</strong><span class="time">' + time + '</span><p>' + text + '</p>';
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
 }
+
+// Append system message
+function appendSystemMessage(text) {
+  const list = document.getElementById('messageList');
+  if (!list) {
+    console.error('Message list not found');
+    return;
+  }
+  
+  const div = document.createElement('div');
+  div.className = 'message system';
+  div.textContent = text;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+// Socket event listeners
+socket.on('join_success', function(data) {
+  console.log('✅ Join success:', data);
+  currentUser = data.nickname;
+  
+  const myNickname = document.getElementById('myNickname');
+  const joinContainer = document.getElementById('joinContainer');
+  const chatContainer = document.getElementById('chatContainer');
+  const messageInput = document.getElementById('messageInput');
+  
+  if (myNickname) myNickname.textContent = 'You: ' + currentUser;
+  if (joinContainer) joinContainer.style.display = 'none';
+  if (chatContainer) chatContainer.style.display = 'flex';
+  if (messageInput) messageInput.focus();
+});
+
+socket.on('join_error', function(data) {
+  console.error('❌ Join error:', data);
+  alert(data.error || 'Failed to join chat');
+});
+
+socket.on('user_joined', function(data) {
+  console.log('👋 User joined:', data.nickname);
+  appendSystemMessage(data.nickname + ' joined the chat');
+});
+
+socket.on('user_left', function(data) {
+  console.log('👋 User left:', data.nickname);
+  appendSystemMessage(data.nickname + ' left the chat');
+});
+
+socket.on('users_list', function(data) {
+  updateUserList(data.users);
+});
+
+socket.on('message', function(data) {
+  console.log('💬 Message received:', data);
+  appendMessage(data.from, data.text, data.timestamp);
+});
+
+socket.on('user_typing', function(data) {
+  const indicator = document.getElementById('typingIndicator');
+  if (!indicator) return;
+  
+  if (data.typing) {
+    indicator.textContent = data.nickname + ' is typing...';
+    indicator.style.display = 'block';
+  } else {
+    indicator.style.display = 'none';
+  }
+});
+
+// DOM Ready
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('📄 DOM loaded');
+  
+  // Join button
+  const joinBtn = document.getElementById('joinBtn');
+  if (joinBtn) {
+    joinBtn.onclick = joinChat;
+    console.log('✅ Join button listener attached');
+  } else {
+    console.error('❌ Join button not found');
+  }
+
+  // Nickname input - Enter key
+  const nicknameInput = document.getElementById('nicknameInput');
+  if (nicknameInput) {
+    nicknameInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        joinChat();
+      }
+    });
+    nicknameInput.focus();
+    console.log('✅ Nickname input listener attached');
+  } else {
+    console.error('❌ Nickname input not found');
+  }
+
+  // Send button
+  const sendBtn = document.getElementById('sendBtn');
+  if (sendBtn) {
+    sendBtn.addEventListener('click', sendMessage);
+    console.log('✅ Send button listener attached');
+  }
+  
+  // Message input
+  const messageInput = document.getElementById('messageInput');
+  if (messageInput) {
+    // Enter key
+    messageInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Typing indicator
+    messageInput.addEventListener('input', function() {
+      if (!currentUser) return;
+      
+      socket.emit('typing', { typing: true });
+      
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(function() {
+        socket.emit('typing', { typing: false });
+      }, 1000);
+    });
+    console.log('✅ Message input listener attached');
+  }
+  
+  console.log('🎉 All event listeners initialized');
+});
